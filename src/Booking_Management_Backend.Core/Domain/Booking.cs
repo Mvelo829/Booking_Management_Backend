@@ -55,5 +55,9 @@ namespace Booking_Management_Backend.Domain
         /// 
         /// </summary>
         public virtual ReflistBookingStatus? BookingStatus { set; get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public virtual RefListProgressStatus? ProgressStatus { set; get; }
     }
 }

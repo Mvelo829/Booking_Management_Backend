@@ -32,6 +32,9 @@ namespace Booking_Management_Backend.Services.BookingService
                 .ForMember(e=>e.IdNumber,m=>m.MapFrom(a=>a.Person!=null? a.Person.IdNumber:null))
                 .ForMember(e=>e.Cellno,m=>m.MapFrom(a=>a.Person!=null? a.Person.CellPhone:null));
 
+            CreateMap<Booking, BookingProgressDto>()
+               .ForMember(e => e.EventName, m => m.MapFrom(a => a.ProgressStatus != null ? a.ProgressStatus.GetRefListText() : null));
+
             CreateMap<BookingDto, Booking>()
                .ForMember(e => e.Id, m => m.Ignore());
 

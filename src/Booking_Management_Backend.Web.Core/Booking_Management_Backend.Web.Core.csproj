@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Booking_Management_Backend.Application\Booking_Management_Backend.Application.csproj" />
     <ProjectReference Include="..\Booking_Management_Backend.EntityFrameworkCore\Booking_Management_Backend.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\Booking_Management_Backend.Migrator\Booking_Management_Backend.Migrator.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.4" />

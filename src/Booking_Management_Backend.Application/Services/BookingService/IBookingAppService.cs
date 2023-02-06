@@ -12,7 +12,10 @@ namespace Booking_Management_Backend.Services.BookingService
     public interface IBookingAppService:IApplicationService
     {
         Task<BookingDto> CreateAsync(BookingDto input);
+        Task<BookingDto> CreateBookingAndPersonAsync(BookingDto input);        
         Task<BookingDto> GetAsync(Guid id);
+        Task<List<BookingViewDto>> GetBookingHistoryAsync(string IdNumber);
+        Task<BookingProgressDto> GetProgresStatus(Guid id);
         Task<List<BookingViewDto>> GetAllAsync();
         Task<BookingDetailsDto>GetBookingDetails(Guid id);
         Task<BookingDto> UpdateAsync(BookingDto input);

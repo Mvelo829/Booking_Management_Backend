@@ -1,11 +1,15 @@
 ﻿using Abp.Application.Services;
 using Abp.Domain.Repositories;
+using Abp.Runtime.Validation;
+using Booking_Management_Backend.Configuration;
 using Booking_Management_Backend.Domain;
 using Booking_Management_Backend.Services.Dtos;
 using Booking_Management_Backend.Services.PersonService;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,7 +30,7 @@ namespace Booking_Management_Backend.Services.BookingService
         }
 
         [HttpPost]
-        public async Task<BookingDto> CreateAsync(BookingDto input)
+        public async Task<BookingDto> CreateBookingAndPersonAsync(BookingDto input)
         {
             var person = new Person();
             person = _personRepository.GetAll().ToList().Where(x => x.IdNumber == input?.IdNumber).FirstOrDefault();
@@ -51,6 +55,21 @@ namespace Booking_Management_Backend.Services.BookingService
             CurrentUnitOfWork.SaveChanges();
             return ObjectMapper.Map<BookingDto>(booking);
         }
+
+        public async Task<BookingDto> CreateAsync(BookingDto input)
+        {
+            var person = new Person();
+            person = _personRepository.GetAll().ToList().Where(x => x.IdNumber == input?.IdNumber).FirstOrDefault();
+            if (person == null)
+                throw new AbpValidationException("", new List<ValidationResult> { new ValidationResult($"Person NotFound") });
+            var booking = ObjectMapper.Map<Booking>(input);
+            booking.Person = person;
+            booking.RefNumber = $"Ref{GetUniqueName("RefNumber").GetHashCode().ToString()}";
+            await _bookingRepository.InsertAsync(booking);
+            CurrentUnitOfWork.SaveChanges();
+            return ObjectMapper.Map<BookingDto>(booking);
+        }
+
 
         [HttpPost]
         public async Task<BookingDetailsDto> CancellBookingAsync(CancellBookingDto input)
@@ -77,10 +96,30 @@ namespace Booking_Management_Backend.Services.BookingService
         }
 
         [HttpGet]
+        public async Task<BookingProgressDto> GetProgresStatus(Guid id)
+        {
+            var booking = _bookingRepository.GetAllIncluding(x => x.Person).Where(x => x.Id == id).FirstOrDefault();
+            var response = ObjectMapper.Map<BookingProgressDto>(booking);
+            response.Description = await SwitchEventName(response.EventName);
+            return ObjectMapper.Map<BookingProgressDto>(booking);
+        }
+
+        [HttpGet]
+        public async Task<List<BookingViewDto>> GetBookingHistoryAsync(string IdNumber)
+        {
+            var twoMonthsAgo = DateTime.Now.AddMonths(-2);
+            var historyRecord = _bookingRepository.GetAllIncluding(x=>x.Person).Where(x => x.Person.IdNumber == IdNumber && x.CreationTime >= twoMonthsAgo).OrderByDescending(x => x.CreationTime);
+            return ObjectMapper.Map<List<BookingViewDto>>(historyRecord);
+        }
+
+        [HttpGet]
         public async Task<BookingDetailsDto> GetBookingDetails(Guid id)
         {
             var booking =  _bookingRepository.GetAllIncluding(x=>x.Person).Where(x=>x.Id == id).FirstOrDefault();
-            return ObjectMapper.Map<BookingDetailsDto>(booking);
+            var response = ObjectMapper.Map<BookingDetailsDto>(booking);
+            response.CarWashOptionsName = booking.CarWashOptions.GetRefListText();
+            response.StatusName = booking.Status.GetRefListText();
+            return response;
         }
 
         [HttpPut]
@@ -99,6 +138,7 @@ namespace Booking_Management_Backend.Services.BookingService
             var booking = await _bookingRepository.GetAsync(Id);
             await _bookingRepository.DeleteAsync(booking);
         }
+
         private string GetUniqueName(string fileName)
         {
             fileName = Path.GetFileName(fileName);
@@ -108,5 +148,23 @@ namespace Booking_Management_Backend.Services.BookingService
                       + Path.GetExtension(fileName);
         }
 
+        private async Task<string> SwitchEventName(string status)
+        {
+            switch (status)
+            {
+                case ("Online Booking"):
+                    return "Booking Confirmed";
+                case ("At Spot"):
+                    return "Car arrived";
+                case ("Washing"):
+                    return "Being attended";
+                case ("Done"):
+                    return "Ready to be fetched";
+                default:
+                    return "Thank you";
+
+            }
+        }
+      
     }
 }
